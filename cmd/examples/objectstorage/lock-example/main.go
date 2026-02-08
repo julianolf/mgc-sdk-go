@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -127,7 +128,8 @@ func main() {
 	// Step 5: Upload an object
 	fmt.Println("📍 Step 5: Upload object to locked bucket")
 	fmt.Printf("   Uploading '%s'...\n", testObjectKey)
-	err = osClient.Objects().Upload(ctx, testBucketName, testObjectKey, []byte(testObjectData), "text/plain")
+	data := []byte(testObjectData)
+	err = osClient.Objects().Upload(ctx, testBucketName, testObjectKey, bytes.NewReader(data), int64(len(data)), "text/plain")
 	if err != nil {
 		fmt.Printf("   ❌ Failed to upload object: %v\n", err)
 	} else {
@@ -183,7 +185,7 @@ func main() {
 	// Step 9: Download the object to verify it still exists
 	fmt.Println("📍 Step 9: Download object to verify it's still protected")
 	fmt.Printf("   Downloading '%s'...\n", testObjectKey)
-	data, err := osClient.Objects().Download(ctx, testBucketName, testObjectKey, nil)
+	data, err = osClient.Objects().Download(ctx, testBucketName, testObjectKey, nil)
 	if err != nil {
 		fmt.Printf("   ❌ Failed to download object: %v\n", err)
 	} else {

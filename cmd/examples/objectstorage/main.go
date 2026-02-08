@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -218,11 +219,13 @@ func testUploadObject(ctx context.Context, osClient *objectstorage.ObjectStorage
 	fmt.Println("📝 Test 4: Upload Object")
 	fmt.Println("─────────────────────────────────────────────────────────────")
 
+	data := []byte(testObjectData)
 	err := osClient.Objects().Upload(
 		ctx,
 		testBucketName,
 		testObjectKey,
-		[]byte(testObjectData),
+		bytes.NewReader(data),
+		int64(len(data)),
 		"text/plain",
 	)
 	if err != nil {

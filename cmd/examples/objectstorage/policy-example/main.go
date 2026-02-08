@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -85,7 +86,8 @@ func main() {
 	// Step 2: Upload an object
 	fmt.Println("📍 Step 2: Upload object to bucket")
 	fmt.Printf("   Uploading '%s'...\n", testObjectKey)
-	err = osClient.Objects().Upload(ctx, testBucketName, testObjectKey, []byte(testObjectData), "text/plain")
+	data := []byte(testObjectData)
+	err = osClient.Objects().Upload(ctx, testBucketName, testObjectKey, bytes.NewReader(data), int64(len(data)), "text/plain")
 	if err != nil {
 		fmt.Printf("   ❌ Failed to upload object: %v\n", err)
 	} else {

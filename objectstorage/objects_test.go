@@ -16,8 +16,9 @@ func TestObjectServiceUpload_InvalidBucketName(t *testing.T) {
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
+	data := []byte("test-data")
 
-	err := svc.Upload(context.Background(), "", "test-key", []byte("test-data"), "text/plain")
+	err := svc.Upload(context.Background(), "", "test-key", bytes.NewReader(data), int64(len(data)), "text/plain")
 
 	if err == nil {
 		t.Error("Upload() expected error for empty bucket name, got nil")
@@ -34,8 +35,9 @@ func TestObjectServiceUpload_InvalidObjectKey(t *testing.T) {
 	core := client.NewMgcClient()
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
+	data := []byte("test-data")
 
-	err := svc.Upload(context.Background(), "test-bucket", "", []byte("test-data"), "text/plain")
+	err := svc.Upload(context.Background(), "test-bucket", "", bytes.NewReader(data), int64(len(data)), "text/plain")
 
 	if err == nil {
 		t.Error("Upload() expected error for empty object key, got nil")
@@ -53,7 +55,7 @@ func TestObjectServiceUpload_EmptyData(t *testing.T) {
 	osClient, _ := New(core, "minioadmin", "minioadmin")
 	svc := osClient.Objects()
 
-	err := svc.Upload(context.Background(), "test-bucket", "test-key", []byte{}, "")
+	err := svc.Upload(context.Background(), "test-bucket", "test-key", bytes.NewReader([]byte{}), 0, "")
 
 	if err == nil {
 		t.Error("Upload() expected error for empty data, got nil")
@@ -72,7 +74,7 @@ func TestObjectServiceUpload_ValidParameters(t *testing.T) {
 	svc := osClient.Objects()
 
 	data := []byte("test data")
-	err := svc.Upload(context.Background(), "test-bucket", "test-key", data, "text/plain")
+	err := svc.Upload(context.Background(), "test-bucket", "test-key", bytes.NewReader(data), int64(len(data)), "text/plain")
 
 	if err == nil {
 		t.Error("Upload() expected error due to no connection, got nil")

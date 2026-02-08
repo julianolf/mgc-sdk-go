@@ -1,7 +1,6 @@
 package objectstorage
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"time"
@@ -11,7 +10,7 @@ import (
 
 // ObjectService provides operations for managing objects.
 type ObjectService interface {
-	Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string) error
+	Upload(ctx context.Context, bucketName string, objectKey string, data io.Reader, size int64, contentType string) error
 	Download(ctx context.Context, bucketName string, objectKey string, opts *DownloadOptions) ([]byte, error)
 	DownloadStream(ctx context.Context, bucketName string, objectKey string, opts *DownloadStreamOptions) (io.Reader, error)
 	List(ctx context.Context, bucketName string, opts ObjectListOptions) ([]Object, error)
@@ -30,7 +29,7 @@ type objectService struct {
 }
 
 // Upload uploads an object to a bucket.
-func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey string, data []byte, contentType string) error {
+func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey string, data io.Reader, size int64, contentType string) error {
 	if bucketName == "" {
 		return &InvalidBucketNameError{Name: bucketName}
 	}
@@ -39,11 +38,11 @@ func (s *objectService) Upload(ctx context.Context, bucketName string, objectKey
 		return &InvalidObjectKeyError{Key: objectKey}
 	}
 
-	if len(data) == 0 {
+	if size == 0 {
 		return &InvalidObjectDataError{Message: "object data cannot be empty"}
 	}
 
-	_, err := s.client.minioClient.PutObject(ctx, bucketName, objectKey, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
+	_, err := s.client.minioClient.PutObject(ctx, bucketName, objectKey, data, size, minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 
