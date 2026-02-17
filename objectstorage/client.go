@@ -139,3 +139,9 @@ func (c *ObjectStorageClient) Buckets() BucketService {
 func (c *ObjectStorageClient) Objects() ObjectService {
 	return &objectService{client: c}
 }
+
+// Presigner returns a service to generate presigned URLs.
+// This method allows access to functionality such as generating presigned URLs for GET, PUT and HEAD HTTP operations.
+func (c *ObjectStorageClient) Presigner() PresignedService {
+	return &presignedService{client: c}
+}
