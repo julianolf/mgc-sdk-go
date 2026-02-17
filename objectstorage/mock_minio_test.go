@@ -2,9 +2,16 @@ package objectstorage
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"fmt"
 	"io"
+	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/cors"
 )
@@ -12,6 +19,7 @@ import (
 // mockMinioClient is a mock implementation of the MinIO client for testing
 type mockMinioClient struct {
 	// Storage for mock data
+	endpoint               string
 	buckets                map[string]*mockBucket
 	listBucketsFunc        func(ctx context.Context) ([]minio.BucketInfo, error)
 	makeBucketFunc         func(ctx context.Context, bucketName string, opts minio.MakeBucketOptions) error
@@ -33,6 +41,9 @@ type mockMinioClient struct {
 	statObjectFunc         func(ctx context.Context, bucketName string, objectName string, opts minio.StatObjectOptions) (minio.ObjectInfo, error)
 	putObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, opts minio.PutObjectRetentionOptions) error
 	getObjectRetentionFunc func(ctx context.Context, bucketName string, objectName string, versionID string) (*minio.RetentionMode, *time.Time, error)
+	presignedGetObject     func(ctx context.Context, bucketName string, objectName string, expiry time.Duration, reqParams url.Values) (*url.URL, error)
+	presignedHeadObject    func(ctx context.Context, bucketName string, objectName string, expiry time.Duration, reqParams url.Values) (*url.URL, error)
+	presignedPutObject     func(ctx context.Context, bucketName string, objectName string, expiry time.Duration) (*url.URL, error)
 	setAppInfoCalls        int
 	lastAppName            string
 	lastAppVersion         string
@@ -73,7 +84,8 @@ type mockObjectRetention struct {
 // newMockMinioClient creates a new mock MinIO client
 func newMockMinioClient() *mockMinioClient {
 	return &mockMinioClient{
-		buckets: make(map[string]*mockBucket),
+		endpoint: "br-se1.magaluobjects.com",
+		buckets:  make(map[string]*mockBucket),
 	}
 }
 
@@ -409,4 +421,73 @@ func (m *mockMinioClient) SetAppInfo(appName string, appVersion string) {
 	m.setAppInfoCalls++
 	m.lastAppName = appName
 	m.lastAppVersion = appVersion
+}
+
+func (m *mockMinioClient) PresignedGetObject(ctx context.Context, bucketName string, objectName string, expiry time.Duration, reqParams url.Values) (*url.URL, error) {
+	if m.presignedGetObject != nil {
+		return m.presignedGetObject(ctx, bucketName, objectName, expiry, reqParams)
+	}
+	return m.generateSignedURL(bucketName, objectName, expiry)
+}
+
+func (m *mockMinioClient) PresignedHeadObject(ctx context.Context, bucketName string, objectName string, expiry time.Duration, reqParams url.Values) (*url.URL, error) {
+	if m.presignedHeadObject != nil {
+		return m.presignedHeadObject(ctx, bucketName, objectName, expiry, reqParams)
+	}
+	return m.generateSignedURL(bucketName, objectName, expiry)
+}
+
+func (m *mockMinioClient) PresignedPutObject(ctx context.Context, bucketName string, objectName string, expiry time.Duration) (*url.URL, error) {
+	if m.presignedPutObject != nil {
+		return m.presignedPutObject(ctx, bucketName, objectName, expiry)
+	}
+	return m.generateSignedURL(bucketName, objectName, expiry)
+}
+
+func (m *mockMinioClient) generateSignedURL(bucketName string, objectName string, expiry time.Duration) (*url.URL, error) {
+	u := &url.URL{Scheme: "https", Host: m.endpoint}
+	u = u.JoinPath(bucketName, objectName)
+
+	signature, err := m.generateURLSignature(u, expiry)
+	if err != nil {
+		return nil, err
+	}
+
+	u.RawQuery = signature
+	return u, nil
+}
+
+func (m *mockMinioClient) generateURLSignature(url *url.URL, expiry time.Duration) (string, error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return "", err
+	}
+
+	key, err := id.MarshalBinary()
+	if err != nil {
+		return "", err
+	}
+
+	data, err := url.MarshalBinary()
+	if err != nil {
+		return "", err
+	}
+
+	hash := hmac.New(sha256.New, key)
+	hash.Write(data)
+	signature := string(hash.Sum(nil))
+
+	now := time.Now()
+	region, _, _ := strings.Cut(m.endpoint, ".")
+	credential := fmt.Sprintf("%s/%s/%s/s3/aws4_request", id, now.Format("20060102"), region)
+
+	q := url.Query()
+	q.Set("X-Amz-Algorithm", "AWS4-HMAC-SHA256")
+	q.Set("X-Amz-SignedHeaders", "host")
+	q.Set("X-Amz-Signature", signature)
+	q.Set("X-Amz-Credential", credential)
+	q.Set("X-Amz-Date", now.Format("20060102T150405Z"))
+	q.Set("X-Amz-Expires", strconv.Itoa(int(expiry.Seconds())))
+
+	return q.Encode(), nil
 }

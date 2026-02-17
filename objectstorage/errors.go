@@ -66,3 +66,13 @@ type ObjectError struct {
 func (e *ObjectError) Error() string {
 	return fmt.Sprintf("object operation %s on %s/%s failed: %s", e.Operation, e.Bucket, e.Key, e.Message)
 }
+
+// InvalidHTTPMethodError is returned when an invalid HTTP method is received.
+type InvalidHTTPMethodError struct {
+	Method string
+}
+
+// Error returns a string representation of the error.
+func (e *InvalidHTTPMethodError) Error() string {
+	return fmt.Sprintf("invalid HTTP method: %s", e.Method)
+}
