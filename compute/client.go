@@ -56,6 +56,12 @@ func (c *VirtualMachineClient) Images() ImageService {
 	return &imageService{client: c}
 }
 
+// CustomImages returns a service to manage custom virtual machine images.
+// This method allows access to functionality such as creating images.
+func (c *VirtualMachineClient) CustomImages() CustomImageService {
+	return &customImageService{client: c}
+}
+
 // InstanceTypes returns a service to manage instance types.
 // This method allows access to functionality such as listing available machine types.
 func (c *VirtualMachineClient) InstanceTypes() InstanceTypeService {
