@@ -2,6 +2,7 @@ package compute
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	mgc_http "github.com/MagaluCloud/mgc-sdk-go/internal/http"
@@ -28,6 +29,20 @@ const (
 	LicenseUnlicensed License = "unlicensed"
 )
 
+// CustomImage represents a custom virtual machine image.
+// An image is a template that contains the operating system and software for creating instances.
+type CustomImage struct {
+	ID           string               `json:"id"`
+	Name         string               `json:"name"`
+	Status       ImageStatus          `json:"status"`
+	Platform     Platform             `json:"platform"`
+	License      License              `json:"license"`
+	Requirements *MinimumRequirements `json:"requirements,omitempty"`
+	Version      *string              `json:"version,omitempty"`
+	Description  *string              `json:"description,omitempty"`
+	Metadata     *map[string]any      `json:"metadata,omitempty"`
+}
+
 // CreateCustomImageRequest represents the request to create a new custom image.
 type CreateCustomImageRequest struct {
 	Name         string               `json:"name"`
@@ -45,6 +60,7 @@ type CreateCustomImageRequest struct {
 // This interface allows create custom images.
 type CustomImageService interface {
 	Create(ctx context.Context, req CreateCustomImageRequest) (string, error)
+	Get(ctx context.Context, id string) (*CustomImage, error)
 }
 
 // customImageService implements the CustomImageService interface.
@@ -70,4 +86,18 @@ func (s *customImageService) Create(ctx context.Context, createReq CreateCustomI
 		return "", err
 	}
 	return res.ID, nil
+}
+
+// Get retrieves a specific custom image.
+// This method makes an HTTP request to get detailed information about an image.
+func (s *customImageService) Get(ctx context.Context, id string) (*CustomImage, error) {
+	return mgc_http.ExecuteSimpleRequestWithRespBody[CustomImage](
+		ctx,
+		s.client.newRequest,
+		s.client.GetConfig(),
+		http.MethodGet,
+		fmt.Sprintf("/v1/images/custom/%s", id),
+		nil,
+		nil,
+	)
 }

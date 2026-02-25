@@ -44,14 +44,17 @@ type MinimumRequirements struct {
 type ImageStatus string
 
 const (
-	ImageStatusActive        ImageStatus = "active"
-	ImageStatusDeprecated    ImageStatus = "deprecated"
-	ImageStatusDeleted       ImageStatus = "deleted"
-	ImageStatusPending       ImageStatus = "pending"
-	ImageStatusCreating      ImageStatus = "creating"
-	ImageStatusImporting     ImageStatus = "importing"
-	ImageStatusError         ImageStatus = "error"
-	ImageStatusDeletingError ImageStatus = "deleting_error"
+	ImageStatusActive         ImageStatus = "active"
+	ImageStatusDeprecated     ImageStatus = "deprecated"
+	ImageStatusDeleted        ImageStatus = "deleted"
+	ImageStatusDeleting       ImageStatus = "deleting"
+	ImageStatusDeletingError  ImageStatus = "deleting_error"
+	ImageStatusPending        ImageStatus = "pending"
+	ImageStatusCreating       ImageStatus = "creating"
+	ImageStatusImporting      ImageStatus = "importing"
+	ImageStatusImportingError ImageStatus = "importing_error"
+	ImageStatusInvalidImage   ImageStatus = "invalid_image"
+	ImageStatusError          ImageStatus = "error"
 )
 
 // ImageService provides operations for managing virtual machine images.
